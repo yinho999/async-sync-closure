@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::sync::RwLock;
 
+// Create distinct types for sync and async closures for individual implementations
 mod private {
     #[derive(Debug, Clone, Copy)]
     pub enum Sync {}
@@ -18,7 +19,7 @@ trait MessageHandler<T>: Send + Sync + 'static {
     }
 }
 
-// impl<F, > MessageHandler<private::Sync> for fn() - fn() is sync closure
+// impl<F, > MessageHandler<private::Sync> for F - F is sync closure
 impl<F, > MessageHandler<private::Sync> for F
     where
         F: FnOnce() + Send + Sync + Clone + 'static,
@@ -42,13 +43,18 @@ impl<F, Fut, > MessageHandler<private::Async> for F
     }
 }
 
+// BoxedMessageHandler is a trait object that can be used to store any type that implements MessageHandler
+// T is either private::Sync or private::Async
 pub(crate) type BoxedMessageHandler<T> = Box<dyn MessageHandler<T>>;
 
+// BoxAsyncFunctionStorage is a struct that stores a map of message handlers
+// The storage is generic over T, which can be either private::Sync or private::Async
 struct BoxAsyncFunctionStorage<T> {
     message_handlers: RwLock<HashMap<String, BoxedMessageHandler<T>>>,
     _type: std::marker::PhantomData<T>,
 }
 
+// Implementations for BoxAsyncFunctionStorage
 impl <T>BoxAsyncFunctionStorage<T> where T: Send + Sync + 'static{
     fn new() -> Self {
         Self {
@@ -73,12 +79,14 @@ impl <T>BoxAsyncFunctionStorage<T> where T: Send + Sync + 'static{
 
 #[tokio::main]
 async fn main() {
+    // Create a new BoxAsyncFunctionStorage
     let mut storage = BoxAsyncFunctionStorage::new();
+    // Either add a sync message handler
     storage.add_message_handler("hello", || {
         println!("Hello, World!");
     });
     storage.call_message_handler("hello");
-
+    // Or add an async message handler
     // storage.add_message_handler("goodbye", || async move {
     //     println!("Goodbye, World!");
     // });
