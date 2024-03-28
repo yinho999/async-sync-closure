@@ -11,6 +11,7 @@ mod private {
     pub enum Async {}
 }
 
+// MessageHandler is a trait that defines the call method
 trait MessageHandler<T>: Send + Sync + 'static {
     fn call(&self);
     #[doc(hidden)]
@@ -80,15 +81,17 @@ impl <T>BoxAsyncFunctionStorage<T> where T: Send + Sync + 'static{
 #[tokio::main]
 async fn main() {
     // Create a new BoxAsyncFunctionStorage
-    let mut storage = BoxAsyncFunctionStorage::new();
+    let mut sync_storage = BoxAsyncFunctionStorage::new();
     // Either add a sync message handler
-    storage.add_message_handler("hello", || {
+    sync_storage.add_message_handler("hello", || {
         println!("Hello, World!");
     });
-    storage.call_message_handler("hello");
+    sync_storage.call_message_handler("hello");
+    
+    let mut async_storage = BoxAsyncFunctionStorage::new();
     // Or add an async message handler
-    // storage.add_message_handler("goodbye", || async move {
-    //     println!("Goodbye, World!");
-    // });
-    // storage.call_message_handler("goodbye");
+    async_storage.add_message_handler("goodbye", || async move {
+        println!("Goodbye, World!");
+    });
+    async_storage.call_message_handler("goodbye");
 }
