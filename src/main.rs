@@ -1,17 +1,41 @@
-use serde_json::json;
 use async_sync_closure_testing::message_handler;
 use async_sync_closure_testing::message_storage::{BoxAsyncFunctionStorage, MessageStorage};
 use async_sync_closure_testing::message_value::MessageValueTrait;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessageValue {
+    x: i32,
+    y: u32,
+}
 
-pub struct MessageValue(serde_json::Value);
 impl From<serde_json::Value> for MessageValue {
     fn from(value: serde_json::Value) -> Self {
-        MessageValue(value)
+        let message_value = value.get("message_value").unwrap();
+        MessageValue::deserialize(message_value).unwrap()
     }
 }
 impl MessageValueTrait for MessageValue {
     fn get_value(value: &serde_json::Value) -> Self {
-        MessageValue(value.clone())
+        MessageValue::from(value.clone())
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SocketMessage {
+    message: String,
+}
+
+impl From<serde_json::Value> for SocketMessage {
+    fn from(value: serde_json::Value) -> Self {
+        let socket_message = value.get("socket_message").unwrap();
+        SocketMessage::deserialize(socket_message).unwrap()
+    }
+}
+
+impl MessageValueTrait for SocketMessage {
+    fn get_value(value: &serde_json::Value) -> Self {
+        SocketMessage::from(value.clone())
     }
 }
 
@@ -32,11 +56,28 @@ async fn main() {
     });
 
     async_storage.call_message_handler("goodbye", json!("{}"));
-    
+
     // multiple arguments
     let mut sync_storage = BoxAsyncFunctionStorage::new();
-    sync_storage.add_message_handler("hello", |msg_value: MessageValue| {
-        println!("Hello, World! {:?}", msg_value.0);
-    });
-    sync_storage.call_message_handler("hello", json!([5,5]));
+    sync_storage.add_message_handler(
+        "hello",
+        |msg_value: MessageValue, socket_message: SocketMessage| {
+            println!("Message value! {}", msg_value.x);
+            println!("Message value! {}", msg_value.y);
+
+            println!("Socket message! {}", socket_message.message);
+        },
+    );
+    sync_storage.call_message_handler(
+        "hello",
+        json!( {
+            "message_value": {
+                "x": 1,
+                "y": 2
+            },
+            "socket_message": {
+                "message": "hello"
+            }
+        }),
+    );
 }
