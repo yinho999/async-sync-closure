@@ -19,9 +19,9 @@ pub trait MessageHandler<T>: Send + Sync + 'static {
 }
 
 // impl<F, > MessageHandler<private::Sync> for F - F is sync closure
-impl<F, > MessageHandler<private::Sync> for F
-    where
-        F: FnOnce() + Send + Sync + Clone + 'static,
+impl<F> MessageHandler<private::Sync> for F
+where
+    F: FnOnce() + Send + Sync + Clone + 'static,
 {
     fn call(&self) {
         (self.clone())();
@@ -29,10 +29,10 @@ impl<F, > MessageHandler<private::Sync> for F
 }
 
 // impl<F, Fut, > MessageHandler<private::Sync> for F - F is async closure
-impl<F, Fut, > MessageHandler<private::Async> for F
-    where
-        F: FnOnce() -> Fut + Send + Sync + Clone + 'static,
-        Fut: Future<Output=()> + Send + 'static,
+impl<F, Fut> MessageHandler<private::Async> for F
+where
+    F: FnOnce() -> Fut + Send + Sync + Clone + 'static,
+    Fut: Future<Output = ()> + Send + 'static,
 {
     fn call(&self) {
         let fut = (self.clone())();
@@ -45,4 +45,3 @@ impl<F, Fut, > MessageHandler<private::Async> for F
 // BoxedMessageHandler is a trait object that can be used to store any type that implements MessageHandler
 // T is either private::Sync or private::Async
 pub(crate) type BoxedMessageHandler<T> = Box<dyn MessageHandler<T>>;
-

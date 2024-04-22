@@ -1,6 +1,5 @@
 use async_sync_closure_testing::message_storage::BoxAsyncFunctionStorage;
 
-
 #[tokio::main]
 async fn main() {
     // Create a new BoxAsyncFunctionStorage
@@ -10,7 +9,7 @@ async fn main() {
         println!("Hello, World!");
     });
     sync_storage.call_message_handler("hello");
-    
+
     let mut async_storage = BoxAsyncFunctionStorage::new();
     // Or add an async message handler
     async_storage.add_message_handler("goodbye", || async move {
